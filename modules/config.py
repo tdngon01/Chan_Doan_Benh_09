@@ -36,7 +36,7 @@ class System_Config:
                 'Cardiomegaly', 'Consolidation', 'ILD', 'Infiltration', 
         'Lung Opacity', 'Nodule/Mass', 'Other lesion', 'Pleural effusion', 
         'Pleural thickening', 'Pneumothorax', 'Pulmonary fibrosis','No finding']
-
+    
     NUM_CLASSES = len(CLASS_NAMES)
     
     SPARK_CONFIG = {

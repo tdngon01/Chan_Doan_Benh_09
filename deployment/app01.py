@@ -255,11 +255,7 @@ def select_checkpoint():
             "backbone": "GoogleNet",
         },
     }
-
-    # model_options = {
-    #     name: info for name, info in all_model_options.items()
-    #     if os.path.exists(info["path"])
-    # }
+    
     if not all_model_options:
         raise FileNotFoundError("Không tìm thấy checkpoint")
 
