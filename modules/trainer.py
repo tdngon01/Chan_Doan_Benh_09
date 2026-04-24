@@ -13,7 +13,8 @@ from torch.nn import BCEWithLogitsLoss
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from modules.config import System_Config as cfg
-
+from training.full_finetune import main as main_full
+from training.lora_finetune import main as main_lora
 
 def set_seed(seed): #cố định số ngẫu nhiên 
     random.seed(seed)
@@ -70,8 +71,9 @@ def resume_checkpoint(resume_path, model, optimizer, scheduler, scaler, device):
     print(f"Best auc đã lưu: {best_auc:.4f}")
     return start_epoch, best_auc
 
+TEMP_VRAM = cfg.temp_vram
 MODEL_TYPE = cfg.TYPE
-writer = SummaryWriter(os.path.join(cfg.LOGS_DIR, f"vram_train_{MODEL_TYPE}_{cfg.FINE_TUNE_CONFIG['MODEL_NAME']}"))
+writer = SummaryWriter(os.path.join(cfg.LOGS_DIR, f"vram_train_{MODEL_TYPE}_{TEMP_VRAM}_{cfg.FINE_TUNE_CONFIG['MODEL_NAME']}"))
 def train(model, train_loader, criterion, optimizer, scaler, device, amp_enabled, epoch, total_epochs, train_mode_name):
     model.train()
     total_loss = 0.0

@@ -23,9 +23,9 @@ METRICS_JSON_PATH = os.path.join(LOG_DIR, f"metrics_full_{cfg.FINE_TUNE_CONFIG['
 RUN_INFO_PATH = os.path.join(LOG_DIR, f"run_info_full_{cfg.FINE_TUNE_CONFIG['MODEL_NAME']}.json")
 
 CHECKPOINT_DIR = os.path.join(cfg.CHECKPOINT_DIR, f"full_finetune_{cfg.FINE_TUNE_CONFIG['MODEL_NAME']}")
-#RESUME_PATH = os.path.join(CHECKPOINT_DIR, "11_full_best_auc.pth.tar")
+# RESUME_PATH = os.path.join(CHECKPOINT_DIR, "19_full_best_auc.pth.tar")
 RESUME_PATH = None
-SUPPORTED_BACKBONES = ("EfficientNet", "ResNet", "DenseNet", "MobileNet", "GoogleNet")
+SUPPORTED_BACKBONES = ("EfficientNet", "ResNet", "DenseNet", "MobileNet", "GoogleNet", "VGG16")
 
 def model_full():
     backbone = cfg.FINE_TUNE_CONFIG["MODEL_NAME"]
@@ -69,6 +69,15 @@ def model_full():
         model = models.googlenet(weights=None, aux_logits=False)
         in_features = model.fc.in_features
         model.fc = nn.Sequential(
+            nn.Linear(in_features, 512),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(512, cfg.NUM_CLASSES),
+        )
+    elif backbone == "VGG16":
+        model = models.vgg16(weights=None)
+        in_features = model.classifier[6].in_features
+        model.classifier[6] = nn.Sequential(
             nn.Linear(in_features, 512),
             nn.ReLU(),
             nn.Dropout(0.5),

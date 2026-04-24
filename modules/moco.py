@@ -93,7 +93,35 @@ class GoogLeNetBackbone(nn.Module):
         features = self.backbone(x)
         projections = self.projector(features)
         return projections
-    
+
+class VGG16Backbone(nn.Module):
+    def __init__(self, mlp, pretrained):
+        super(VGG16Backbone, self).__init__()
+        weights = VGG16_Weights.DEFAULT if pretrained else None
+        self.backbone = vgg16(weights=weights)
+        feature_dim = self.backbone.classifier[6].in_features
+        self.backbone.classifier[6] = nn.Identity()# Bỏ classifier gốc, lấy feature 4096-d
+        dim = cfg.PRETRAIN_CONFIG["DIM"]
+        self.projector = ProjectionHead(feature_dim, mlp, dim)
+    def forward(self, x):
+        features = self.backbone(x)
+        projections = self.projector(features)
+        return projections
+
+# class AlexNetBackbone(nn.Module):
+#     def __init__(self, mlp, pretrained):
+#         super(AlexNetBackbone, self).__init__()
+#         weights = AlexNet_Weights.DEFAULT if pretrained else None
+#         self.backbone = alexnet(weights=weights)
+#         feature_dim = self.backbone.in_features
+#         self.backbone.classifier[6] = nn.Identity()# Bỏ classifier gốc, lấy feature 4096-d
+#         dim = cfg.PRETRAIN_CONFIG["DIM"]
+#         self.projector = ProjectionHead(feature_dim, mlp, dim)
+#     def forward(self, x):
+#         features = self.backbone(x)
+#         projections = self.projector(features)
+#         return projections
+
 class MoCo(nn.Module):
     def __init__(self,
                 dim = cfg.PRETRAIN_CONFIG["DIM"],
@@ -122,6 +150,9 @@ class MoCo(nn.Module):
         elif self.backbone == "GoogLeNet":
             self.encoder_q = GoogLeNetBackbone(pretrained=pretrained, mlp=mlp, aux_logits=False)
             self.encoder_k = GoogLeNetBackbone(pretrained=pretrained, mlp=mlp, aux_logits=False)
+        elif self.backbone == "VGG16":
+            self.encoder_q = VGG16Backbone(pretrained=pretrained, mlp=mlp)
+            self.encoder_k = VGG16Backbone(pretrained=pretrained, mlp=mlp)
         else:
             raise ValueError(
                 f"'{self.backbone}'. Chỉ các backbone: EfficientNet, ResNet, DenseNet, MobileNet"

@@ -162,7 +162,8 @@ def Pre_Train_DataLoader():
         shuffle=True,
         num_workers=cfg.NUM_WORKERS,
         pin_memory=cfg.PIN_MEMORY,
-        drop_last=True
+        drop_last=True,
+        generator=torch.Generator().manual_seed(42)
     )
     spark_dataloader = torch.utils.data.DataLoader(
         spark_dataset,
@@ -170,7 +171,8 @@ def Pre_Train_DataLoader():
         shuffle=True,
         num_workers=cfg.NUM_WORKERS,
         pin_memory=cfg.PIN_MEMORY,
-        drop_last=True
+        drop_last=True,
+        generator=torch.Generator().manual_seed(42)
     )
     return moco_dataloader, spark_dataloader
 
@@ -201,6 +203,7 @@ def Fine_Tune_DataLoader():
         num_workers=cfg.NUM_WORKERS,
         pin_memory=cfg.PIN_MEMORY,
         drop_last=False,
+        generator=torch.Generator().manual_seed(42)
     )
     val_loader = torch.utils.data.DataLoader(
         val_dataset,

@@ -18,7 +18,7 @@ from deployment.style import *
 
 #Chạy: streamlit run deployment/app01.py
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-SUPPORTED_BACKBONES = ("EfficientNet", "ResNet", "DenseNet", "MobileNet","GoogleNet")
+SUPPORTED_BACKBONES = ("EfficientNet", "ResNet", "DenseNet", "MobileNet","GoogleNet", "VGG16")
 
 def get_modules_lora(model, backbone):
     target_modules = []
@@ -32,6 +32,8 @@ def get_modules_lora(model, backbone):
         prefixes = ("features.12", "features.13", "features.14", "features.15", "features.16", "features.17")
     elif backbone == "GoogleNet":
         prefixes = ("inception4a","inception4b","inception4c","inception4d","inception4e","inception5a", "inception5b")
+    elif backbone == "VGG16":
+        prefixes = ("features.28")
     else:
         raise ValueError(f"Không có backbone '{backbone}'. Chỉ hỗ trợ: {', '.join(SUPPORTED_BACKBONES)}")
 
@@ -86,6 +88,15 @@ def build_model(backbone, num_classes):
             nn.Dropout(0.3),
             nn.Linear(512, num_classes),
         )
+    elif backbone == "VGG16":
+        model = models.vgg16(weights=None)
+        in_features = model.classifier[6].in_features
+        model.classifier[6] = nn.Sequential(
+            nn.Linear(in_features, 512),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(512, num_classes),
+        )
     else:
         raise ValueError(f"Không có backbone '{backbone}'. Chỉ hỗ trợ: {', '.join(SUPPORTED_BACKBONES)}")
 
@@ -103,6 +114,8 @@ def get_gradcam_layers(model, backbone, is_lora):
         return [model.features[18]]
     if backbone == "GoogleNet":
         return [model.inception5b]
+    if backbone == "VGG16":
+        return [model.features[28]]
     raise ValueError(f"Không hỗ trợ Grad-CAM cho backbone: {backbone}")
 
 def get_threshold_index(index):
@@ -120,6 +133,8 @@ def load_model_lora(ckpt_path, backbone, num_classes):
 
     if backbone == "GoogleNet" or backbone == "ResNet":
         modules = ["fc"]
+    elif backbone == "VGG16":
+        modules = ["classifier.6"]
     else:
         modules = ["classifier"]
     lora_config = LoraConfig(
@@ -150,7 +165,6 @@ def load_model_full(ckpt_path, backbone, num_classes):
 def select_checkpoint():
     BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     CHECKPOINT_MOCO = os.path.join(BASE_DIR, "checkpoints_moco")
-    CHECKPOINT_SPARK = os.path.join(BASE_DIR, "checkpoints_spark")
 
     all_model_options = {
         "1.MoCo_LoRA_EfficientNet-B0": {
@@ -174,7 +188,7 @@ def select_checkpoint():
             "backbone": "MobileNet",
         },
         "5.MoCo_LoRA_ResNet-18": {
-            "path": os.path.join(CHECKPOINT_MOCO, "lora_finetune_ResNet", "lora_finetune_best_auc_0.9181.pth.tar"),
+            "path": os.path.join(CHECKPOINT_MOCO, "lora_finetune_ResNet", "lora_finetune_best_auc_0.9251.pth.tar"),
             "type": "lora",
             "backbone": "ResNet",
         },
@@ -184,7 +198,7 @@ def select_checkpoint():
             "backbone": "ResNet",
         },
         "7.MoCo_LoRA_DenseNet-121": {
-            "path": os.path.join(CHECKPOINT_MOCO, "lora_finetune_DenseNet", "lora_finetune_best_auc_0.9183.pth.tar"),
+            "path": os.path.join(CHECKPOINT_MOCO, "lora_finetune_DenseNet", "lora_finetune_best_auc_0.9312.pth.tar"),
             "type": "lora",
             "backbone": "DenseNet",
         },
@@ -194,7 +208,7 @@ def select_checkpoint():
             "backbone": "DenseNet",
         },
         "9.MoCo_LoRA_GoogleNet": {
-            "path": os.path.join(CHECKPOINT_MOCO, "lora_finetune_GoogleNet", "lora_finetune_best_auc_0.9270.pth.tar"),
+            "path": os.path.join(CHECKPOINT_MOCO, "lora_finetune_GoogleNet", "lora_finetune_best_auc_0.9234.pth.tar"),
             "type": "lora",
             "backbone": "GoogleNet",
         },
@@ -203,56 +217,15 @@ def select_checkpoint():
             "type": "full",
             "backbone": "GoogleNet",
         },
-        #==============SparK==========================================
-        "11.SparK_LoRA_EfficientNet-B0": {
-            "path": os.path.join(CHECKPOINT_SPARK, "lora_finetune_EfficientNet", "lora_finetune_best_auc_0.9259.pth.tar"),
+        "11.MoCo_LoRA_VGG16": {
+            "path": os.path.join(CHECKPOINT_MOCO, "lora_finetune_VGG16", "lora_finetune_best_auc_0.9031.pth.tar"),
             "type": "lora",
-            "backbone": "EfficientNet",
+            "backbone": "VGG16",
         },
-        "12.SparK_Full_EfficientNet-B0": {
-            "path": os.path.join(CHECKPOINT_SPARK, "full_finetune_EfficientNet", "full_finetune_best_auc_0.9217.pth.tar"),
+        "12.MoCo_Full_VGG16": {
+            "path": os.path.join(CHECKPOINT_MOCO, "full_finetune_VGG16", "full_finetune_best_auc_0.9353.pth.tar"),
             "type": "full",
-            "backbone": "EfficientNet",
-        },
-        "13.SparK_LoRA_MobileNet-V2": {
-            "path": os.path.join(CHECKPOINT_SPARK, "lora_finetune_MobileNet", "lora_finetune_best_auc_0.9125.pth.tar"),
-            "type": "lora",
-            "backbone": "MobileNet",
-        },
-        "14.SparK_Full_MobileNet-V2": {
-            "path": os.path.join(CHECKPOINT_SPARK, "full_finetune_MobileNet", "full_finetune_best_auc_0.9123.pth.tar"),
-            "type": "full",
-            "backbone": "MobileNet",
-        },
-        "15.SparK_LoRA_ResNet-18": {
-            "path": os.path.join(CHECKPOINT_SPARK, "lora_finetune_ResNet", "lora_finetune_best_auc_0.9035.pth.tar"),
-            "type": "lora",
-            "backbone": "ResNet",
-        },
-        "16.SparK_Full_ResNet-18": {
-            "path": os.path.join(CHECKPOINT_SPARK, "full_finetune_ResNet", "full_finetune_best_auc_0.9245.pth.tar"),
-            "type": "full",
-            "backbone": "ResNet",
-        },
-        "17.SparK_LoRA_DenseNet-121": {
-            "path": os.path.join(CHECKPOINT_SPARK, "lora_finetune_DenseNet", "lora_finetune_best_auc_0.9109.pth.tar"),
-            "type": "lora",
-            "backbone": "DenseNet",
-        },
-        "18.SparK_Full_DenseNet-121": {
-            "path": os.path.join(CHECKPOINT_SPARK, "full_finetune_DenseNet", "full_finetune_best_auc_0.9223.pth.tar"),
-            "type": "full",
-            "backbone": "DenseNet",
-        },
-        "19.SparK_LoRA_GoogleNet": {
-            "path": os.path.join(CHECKPOINT_SPARK, "lora_finetune_GoogleNet", "lora_finetune_best_auc_0.9207.pth.tar"),
-            "type": "lora",
-            "backbone": "GoogleNet",
-        },
-        "20.SparK_Full_GoogleNet": {
-            "path": os.path.join(CHECKPOINT_SPARK, "full_finetune_GoogleNet", "full_finetune_best_auc_0.9182.pth.tar"),
-            "type": "full",
-            "backbone": "GoogleNet",
+            "backbone": "VGG16",
         },
     }
     
@@ -352,5 +325,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

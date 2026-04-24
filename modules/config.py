@@ -5,13 +5,14 @@ class System_Config:
     PROJECT_NAME = "App_Demo"
     SEED = 42
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    NUM_WORKERS = 1
+    NUM_WORKERS = 0
     PIN_MEMORY = True
     USE_AMP = False
     IMG_SIZE= 224
     MEAN = [0.485, 0.456, 0.406]
     STD = [0.229, 0.224, 0.225]
     TYPE = "moco" # "moco" hoặc "spark"
+    temp_vram = "full" # "full" hoặc "lora"
 
     BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     DATA_DIR = os.path.join(BASE_DIR, "data", "train_csv")
@@ -38,15 +39,9 @@ class System_Config:
         'Pleural thickening', 'Pneumothorax', 'Pulmonary fibrosis','No finding']
     
     NUM_CLASSES = len(CLASS_NAMES)
-    
-    SPARK_CONFIG = {
-        "MASK_RATIO": 0.7,
-        "PATCH_SIZE": 32,
-        "DECODER_CHANNELS": 256,
-    }
 
     PRETRAIN_CONFIG = {
-        "BACKBONE": "ResNet",  # EfficientNet, ResNet, DenseNet, MobileNet, GoogleNet
+        "BACKBONE": "VGG16",  # EfficientNet, ResNet, DenseNet, MobileNet, GoogleNet, VGG16
         "PRE_TRAIN": 5000,
         "EPOCHS": 20,
         "BATCH_SIZE": 16,
@@ -76,6 +71,5 @@ class System_Config:
         "RANK": 8,
         "LORA_ALPHA": 16,
         "DROPOUT": 0.3,
-        "MODULES_TO_SAVE": ["classifier"]
+        "MODULES_TO_SAVE": []
     }
-

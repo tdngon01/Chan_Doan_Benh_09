@@ -24,9 +24,9 @@ def main():
     os.makedirs(LOG_DIR, exist_ok=True)
     METRICS_CSV_PATH = os.path.join(LOG_DIR, "metrics_pretrain.csv")
 
-    train_dataloader = dataset.Pre_Train_DataLoader()
+    moco_dataloader, _ = dataset.Pre_Train_DataLoader()
     print("Dữ liệu huấn luyện đã sẵn sàng.")
-    print(f"Số lượng batch: {len(train_dataloader)}")
+    print(f"Số lượng batch: {len(moco_dataloader)}")
     
     model_moco = MoCo().to(device)
     print(f"Model MoCo, kiến trúc {cfg.PRETRAIN_CONFIG['BACKBONE']} đã được khởi tạo")
@@ -76,7 +76,7 @@ def main():
             total_loss = 0.0
             start_time = time.time()
             pbar = tqdm(
-                train_dataloader,
+                moco_dataloader,
                 desc=f"Epoch {epoch+1}/{cfg.PRETRAIN_CONFIG['EPOCHS']}",
             )
             for i, images in enumerate(pbar):
@@ -99,7 +99,7 @@ def main():
                     "LR":   f"{current_lr:.6f}",
                 })
             # tính epoch
-            avg_loss = total_loss / len(train_dataloader)
+            avg_loss = total_loss / len(moco_dataloader)
             duration = time.time() - start_time
             current_lr_epoch = optimizer.param_groups[0]["lr"]
     
@@ -129,7 +129,5 @@ def main():
     print("\nHuấn luyện hoàn tất")
 
 if __name__ == "__main__":
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
     main()
 

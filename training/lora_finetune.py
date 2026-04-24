@@ -23,22 +23,24 @@ METRICS_JSON_PATH = os.path.join(LOG_DIR, f"metrics_lora_{cfg.FINE_TUNE_CONFIG['
 RUN_INFO_PATH = os.path.join(LOG_DIR, f"run_info_lora_{cfg.FINE_TUNE_CONFIG['MODEL_NAME']}.json")
 CHECKPOINT_DIR = os.path.join(cfg.CHECKPOINT_DIR, f"lora_finetune_{cfg.FINE_TUNE_CONFIG['MODEL_NAME']}")
 
-# RESUME_PATH = os.path.join(CHECKPOINT_DIR, "7_lora_best_auc.pth.tar")
-RESUME_PATH = None
-SUPPORTED_BACKBONES = ("EfficientNet", "ResNet", "DenseNet", "MobileNet", "GoogleNet")
+RESUME_PATH = os.path.join(CHECKPOINT_DIR, "16_lora_best_auc.pth.tar")
+# RESUME_PATH = None
+SUPPORTED_BACKBONES = ("EfficientNet", "ResNet", "DenseNet", "MobileNet", "GoogleNet", "VGG16")
 
 def get_target_modules_for_lora(model, backbone):
     target_modules = []
     if backbone == "EfficientNet":
         prefixes = ("features.6", "features.7", "features.8")
     elif backbone == "ResNet":
-        prefixes = ("layer4.0.conv1", "layer4.0.conv2", "layer4.0.conv3")
+        prefixes = ("layer3", "layer4") # chạy lại
     elif backbone == "DenseNet":
-        prefixes = ("features.denseblock4")
+        prefixes = ("features.denseblock3", "features.denseblock4") # Chạy lại lora
     elif backbone == "MobileNet":
         prefixes = ("features.12", "features.13", "features.14", "features.15", "features.16", "features.17")
     elif backbone == "GoogleNet":
         prefixes = ("inception4a","inception4b","inception4c","inception4d","inception4e","inception5a", "inception5b")
+    elif backbone == "VGG16":
+        prefixes = ("features.28")
     else:
         raise ValueError(f"Không có backbone '{backbone}'. Chỉ hỗ trợ: {', '.join(SUPPORTED_BACKBONES)}")
 
@@ -94,6 +96,15 @@ def model_lora():
             nn.Dropout(0.3),
             nn.Linear(512, cfg.NUM_CLASSES),
         )
+    elif backbone == "VGG16":
+        model = models.vgg16(weights=None)
+        in_features = model.classifier[6].in_features
+        model.classifier[6] = nn.Sequential(
+            nn.Linear(in_features, 512),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(512, cfg.NUM_CLASSES),
+        )
     else:
         raise ValueError(
             f"Không có backbone '{backbone}'. Chỉ có các backbone: {', '.join(SUPPORTED_BACKBONES)}"
@@ -107,8 +118,12 @@ def model_lora():
     target_modules = get_target_modules_for_lora(model, backbone)
     if cfg.FINE_TUNE_CONFIG["MODEL_NAME"] == "ResNet" or cfg.FINE_TUNE_CONFIG["MODEL_NAME"] == "GoogleNet":
         modules = ["fc"]
+    elif cfg.FINE_TUNE_CONFIG["MODEL_NAME"] == "VGG16":
+        modules = ["classifier.6"]
     else:
         modules = ["classifier"]
+        
+    cfg.LORA_CONFIG["MODULES_TO_SAVE"] = modules
 
     lora_config = LoraConfig(
         r=cfg.LORA_CONFIG["RANK"],
@@ -116,7 +131,7 @@ def model_lora():
         target_modules=target_modules,
         bias="none",
         lora_dropout=cfg.LORA_CONFIG["DROPOUT"],
-        modules_to_save=modules,
+        modules_to_save=cfg.LORA_CONFIG["MODULES_TO_SAVE"],
     )
     model = get_peft_model(model, lora_config)
     model = model.to(DEVICE)
