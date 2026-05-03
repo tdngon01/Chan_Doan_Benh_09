@@ -16,18 +16,18 @@ from modules.config import System_Config as cfg
 from modules.utils import load_checkpoint_model
 from deployment.style import *
 
-#Chạy: streamlit run deployment/app01.py
+#Chạy: streamlit run deployment/app.py
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 SUPPORTED_BACKBONES = ("EfficientNet", "ResNet", "DenseNet", "MobileNet","GoogleNet", "VGG16")
 
 def get_modules_lora(model, backbone):
     target_modules = []
     if backbone == "EfficientNet":
-        prefixes = ("features.6", "features.7", "features.8") #prefixes = tiền tố
+        prefixes = ("features.6", "features.7", "features.8")
     elif backbone == "ResNet":
-        prefixes = ("layer4.0.conv1", "layer4.0.conv2", "layer4.0.conv3")
+        prefixes = ("layer3", "layer4") # chạy lại
     elif backbone == "DenseNet":
-        prefixes = ("features.denseblock4")
+        prefixes = ("features.denseblock3", "features.denseblock4") # Chạy lại lora
     elif backbone == "MobileNet":
         prefixes = ("features.12", "features.13", "features.14", "features.15", "features.16", "features.17")
     elif backbone == "GoogleNet":
@@ -119,7 +119,7 @@ def get_gradcam_layers(model, backbone, is_lora):
     raise ValueError(f"Không hỗ trợ Grad-CAM cho backbone: {backbone}")
 
 def get_threshold_index(index):
-    thresholds = cfg.THRESHOLDS
+    thresholds = 0.5
     if isinstance(thresholds, (list, tuple)):
         return thresholds[index]
     return float(thresholds)
@@ -218,7 +218,7 @@ def select_checkpoint():
             "backbone": "GoogleNet",
         },
         "11.MoCo_LoRA_VGG16": {
-            "path": os.path.join(CHECKPOINT_MOCO, "lora_finetune_VGG16", "lora_finetune_best_auc_0.9031.pth.tar"),
+            "path": os.path.join(CHECKPOINT_MOCO, "lora_finetune_VGG16", "lora_finetune_best_auc_0.9021.pth.tar"),
             "type": "lora",
             "backbone": "VGG16",
         },
@@ -310,7 +310,7 @@ def main():
             prediction_card(name, prob, thresh, is_positive)
 
         st.markdown("---")
-        st.subheader("Bản đồ nhiệt Grad-CAM++")
+        st.subheader("Bản đồ nhiệt")
         img_rgb = tensor_to_rgb(img_tensor)
         column = 5
         for row_start in range(0, len(class_names), column): #cắt 5 ảnh cho 1 hàng

@@ -13,8 +13,7 @@ from torch.nn import BCEWithLogitsLoss
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from modules.config import System_Config as cfg
-from training.full_finetune import main as main_full
-from training.lora_finetune import main as main_lora
+
 
 def set_seed(seed): #cố định số ngẫu nhiên 
     random.seed(seed)
